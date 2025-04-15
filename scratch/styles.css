@@ -1,0 +1,52 @@
+body{
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    background-color: rgb(13, 67, 67);
+    color: rgb(8, 39, 58);
+    background-image: url(https://thumbs.dreamstime.com/b/pickleball-paddle-seamless-pattern-vector-summer-sport-repeat-background-tennis-print-wallpaper-textile-design-pastel-color-316627298.jpg);
+    /* background-repeat: no-repeat; */
+    /* background-size: cover; */
+}
+a:hover{
+    color: rgb(32, 49, 72);
+    /* background-color: rgb(73, 56, 56); */
+    text-decoration: underline;
+    /* background-color: rgb(242, 121, 141); */
+}
+a:visited{
+    color: rgb(4, 122, 83);
+}
+
+h1, h2, h3{
+    text-align: center;
+}
+img{
+    border: 5px solid orange;
+    padding: 5px;
+    height: 250px;
+    /* margin: auto;
+    display: block; */
+}
+.rizz{
+    font-family: comicsans;
+    color: yellow;
+    border: 5px dashed blueviolet;
+    font-size: 400%;
+    font-weight: bolder;
+    background-color: hotpink;
+}
+.rizz:hover{
+    font-size: 450%;
+    color: rebeccapurple;
+    border: 5px solid cyan;
+}
+/* li:hover{
+    text-decoration: underline;
+    background-color: rgb(242, 121, 141);
+} */
+li{
+    width: fit-content
+}
+.big-image{
+    width: 300px;
+    height: auto;
+}

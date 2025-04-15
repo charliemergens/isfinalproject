@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222; /* Dark background */
+            margin: 0;
+            font-family: 'Press Start 2P', cursive; /* Use game font */
+            overflow: hidden; /* Prevent scrollbars */
+            color: #fff; /* Default text color */
+        }
+
+        #difficultySelection {
+            text-align: center;
+            background-color: #333;
+            padding: 40px;
+            border-radius: 15px;
+            border: 8px solid #666;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #difficultySelection h2 {
+            margin-bottom: 30px;
+            font-size: 1.5em;
+        }
+
+        #difficultySelection button {
+            display: block; /* Stack buttons vertically */
+            margin: 15px auto; /* Center buttons with space */
+            padding: 15px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1em;
+            cursor: pointer;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 5px #555;
+            transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        #difficultySelection button.easy { background-color: #4CAF50; } /* Green */
+        #difficultySelection button.medium { background-color: #FFC107; } /* Amber */
+        #difficultySelection button.hard { background-color: #F44336; } /* Red */
+
+        #difficultySelection button:hover {
+            filter: brightness(1.1);
+        }
+
+        #difficultySelection button:active {
+             box-shadow: 0 2px #333;
+             transform: translateY(3px);
+        }
+
+
+        #gameContainer {
+            position: relative; /* For positioning message box */
+            border: 8px solid #666; /* Thicker border */
+            border-radius: 15px; /* Rounded corners for the container */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Add a shadow */
+            background-color: #333; /* Slightly lighter background for contrast */
+            overflow: hidden; /* Keep contents within rounded border */
+            display: none; /* Hide game initially */
+        }
+
+        canvas {
+            display: block; /* Remove extra space below canvas */
+            background-color: #eee; /* Light background for the game area */
+        }
+
+        #messageBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            display: none; /* Hidden by default */
+            font-size: 1.5em;
+            z-index: 10;
+            border: 3px solid #fff;
+        }
+
+        #messageBox button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            cursor: pointer;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px #999;
+            transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+
+         #messageBox button:hover {
+             background-color: #45a049;
+         }
+
+         #messageBox button:active {
+             background-color: #3e8e41;
+             box-shadow: 0 2px #666;
+             transform: translateY(2px);
+         }
+
+         /* UI Elements inside game container */
+         .game-ui {
+            position: absolute;
+            top: 15px; /* Default top position */
+            color: #fff;
+            font-size: 0.9em; /* Slightly smaller font for UI */
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 5px;
+            z-index: 5; /* Ensure UI is above canvas but below message box */
+         }
+         #score {
+             left: 15px;
+             /* top: 15px; (from .game-ui) */
+         }
+         #shotsCounter {
+             right: 15px;
+             /* top: 15px; (from .game-ui) */
+          }
+         #difficultyDisplay { /* Display current difficulty */
+            top: 55px; /* CHANGE: Position below score box */
+            left: 15px;
+            /* Removed bottom and top:auto */
+         }
+         .my-link{
+            position: relative;
+            float: right;
+            font-size: 75%;
+            /* padding: 5px; */
+         }
+         .mytitle{
+            position: absolute;
+            top: 0px;
+            text-align: center;
+         }
+
+    </style>
+</head>
+<body>
+    <h1 class="mytitle">Bubble Game</h1>
+    <div id="difficultySelection">
+        <a href="index.html" class="my-link">Pickleball Home</a>
+        <h2>Select Difficulty</h2>
+        <button class="easy" data-difficulty="easy">Easy (4 Colors)</button>
+        <button class="medium" data-difficulty="medium">Medium (5 Colors)</button>
+        <button class="hard" data-difficulty="hard">Hard (6 Colors)</button>
+    </div>
+
+    <div id="gameContainer">
+        <a href="Index.html" class="my-link">Pickleball Home</a>
+        <canvas id="gameCanvas"></canvas>
+        <div id="score" class="game-ui">Score: 0</div>
+        <div id="shotsCounter" class="game-ui">Shots: 0</div>
+        <div id="difficultyDisplay" class="game-ui">Difficulty: -</div> <div id="messageBox">
+            <p id="messageText"></p>
+            <button id="restartButton">Restart</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('gameContainer');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton');
+        const scoreDisplay = document.getElementById('score');
+        const shotsCounterDisplay = document.getElementById('shotsCounter');
+        const difficultySelectionDiv = document.getElementById('difficultySelection');
+        const difficultyButtons = difficultySelectionDiv.querySelectorAll('button');
+        const difficultyDisplay = document.getElementById('difficultyDisplay'); // Get difficulty display element
+
+        // --- Game Configuration ---
+        const BUBBLE_RADIUS = 15;
+        const BUBBLE_DIAMETER = BUBBLE_RADIUS * 2;
+        // Define ALL possible colors
+        const ALL_COLORS = ['#FF5733', '#337AFF', '#33FF57', '#FFFF33', '#A033FF', '#FFC300']; // Red, Blue, Green, Yellow, Purple, Orange
+        const COLS = 11; // Narrower grid
+        const ROWS_VISIBLE = 20; // Taller grid
+        const STARTING_ROWS = 6; // Adjusted starting rows
+        const SHOOTER_Y = BUBBLE_RADIUS * (ROWS_VISIBLE + 1.5); // Recalculated shooter position
+        const SHOT_SPEED = 11; // Slightly faster shot
+        const SHOTS_PER_DESCEND = 5; // Fewer shots before descent (increases difficulty slightly)
+        const MAX_GRID_ROWS = 40; // Increased max rows for taller grid
+
+        // --- Difficulty Settings ---
+        const difficultySettings = {
+            easy: { colors: 4, name: "Easy" },
+            medium: { colors: 5, name: "Medium" },
+            hard: { colors: 6, name: "Hard" }
+        };
+        let currentDifficulty = 'medium'; // Default
+        let activeColors = []; // Colors used in the current game
+
+        // --- Game State ---
+        let grid = [];
+        let shooterBubble = null;
+        let shotBubble = null;
+        let aimAngle = -Math.PI / 2;
+        let mouseX = 0; // Will be set correctly on first init
+        let score = 0;
+        let gameOver = false;
+        let shotsFiredSinceDescend = 0;
+        let animationFrameId = null; // To manage game loop start/stop
+
+        // --- Utility Functions ---
+        /**
+         * Gets a random color from the ACTIVE color array.
+         * @returns {string} A random color hex code from the active set.
+         */
+        function getRandomColor() {
+            if (activeColors.length === 0) return ALL_COLORS[0]; // Fallback
+            return activeColors[Math.floor(Math.random() * activeColors.length)];
+        }
+
+        /**
+         * Calculates the distance between two points.
+         * @param {number} x1 - X coordinate of point 1.
+         * @param {number} y1 - Y coordinate of point 1.
+         * @param {number} x2 - X coordinate of point 2.
+         * @param {number} y2 - Y coordinate of point 2.
+         * @returns {number} The distance.
+         */
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        /**
+         * Converts grid coordinates to pixel coordinates.
+         * @param {number} row - The row index.
+         * @param {number} col - The column index.
+         * @returns {{x: number, y: number}} Pixel coordinates.
+         */
+        function gridToPixel(row, col) {
+            // Adjust for narrower grid and potential centering
+            const gridWidth = COLS * BUBBLE_DIAMETER + BUBBLE_RADIUS;
+            const offsetX = (canvas.width - gridWidth) / 2; // Center the grid horizontally
+
+            const x = offsetX + BUBBLE_RADIUS + col * BUBBLE_DIAMETER + (row % 2) * BUBBLE_RADIUS;
+            const y = BUBBLE_RADIUS + row * (BUBBLE_DIAMETER - BUBBLE_RADIUS / 2); // Overlap rows slightly
+            return { x, y };
+        }
+
+        /**
+         * Converts pixel coordinates to the nearest grid coordinates.
+         * @param {number} x - The pixel X coordinate.
+         * @param {number} y - The pixel Y coordinate.
+         * @returns {{row: number, col: number}} Grid coordinates.
+         */
+        function pixelToGrid(x, y) {
+             // Adjust for horizontal centering offset
+            const gridWidth = COLS * BUBBLE_DIAMETER + BUBBLE_RADIUS;
+            const offsetX = (canvas.width - gridWidth) / 2;
+            const adjustedX = x - offsetX;
+
+            const rowHeight = BUBBLE_DIAMETER - BUBBLE_RADIUS / 2;
+            const roughRow = Math.max(0, Math.floor((y - BUBBLE_RADIUS) / rowHeight));
+            const colWidth = BUBBLE_DIAMETER;
+            const roughCol = Math.max(0, Math.floor((adjustedX - BUBBLE_RADIUS - (roughRow % 2) * BUBBLE_RADIUS) / colWidth));
+
+            let minDist = Infinity;
+            let bestRow = -1;
+            let bestCol = -1;
+
+            for (let rOffset = -1; rOffset <= 1; rOffset++) {
+                for (let cOffset = -1; cOffset <= 1; cOffset++) {
+                    const checkRow = roughRow + rOffset;
+                    const checkCol = roughCol + cOffset;
+
+                    if (checkRow >= 0 && checkCol >= 0 && checkCol < COLS) {
+                        const center = gridToPixel(checkRow, checkCol);
+                        const dist = distance(x, y, center.x, center.y);
+
+                        if (dist < minDist) {
+                            minDist = dist;
+                            bestRow = checkRow;
+                            bestCol = checkCol;
+                        }
+                    }
+                }
+            }
+            const finalCol = Math.max(0, Math.min(COLS - 1, bestCol));
+             // Ensure row is non-negative
+            const finalRow = Math.max(0, bestRow);
+            return { row: finalRow, col: finalCol };
+        }
+
+
+        // --- Bubble Class ---
+        class Bubble {
+             constructor(row, col, color) {
+                this.row = row;
+                this.col = col;
+                this.color = color;
+                this.x = 0;
+                this.y = 0;
+                this.updatePosition();
+                this.markedForRemoval = false;
+                this.isFloating = false;
+            }
+            updatePosition() {
+                const pos = gridToPixel(this.row, this.col);
+                this.x = pos.x;
+                this.y = pos.y;
+            }
+            draw() {
+                // Only draw if somewhat visible vertically
+                if (this.y < canvas.height + BUBBLE_DIAMETER && this.y > -BUBBLE_DIAMETER) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, BUBBLE_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.stroke();
+                    ctx.closePath();
+                }
+            }
+        }
+
+        // --- Shot Bubble Class ---
+        class ShotBubble {
+            constructor(x, y, angle, color) {
+                this.x = x;
+                this.y = y;
+                this.dx = Math.cos(angle) * SHOT_SPEED;
+                this.dy = Math.sin(angle) * SHOT_SPEED;
+                this.color = color;
+            }
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+                // Bounce off walls - adjust for potential centering offset
+                const gridWidth = COLS * BUBBLE_DIAMETER + BUBBLE_RADIUS;
+                const offsetX = (canvas.width - gridWidth) / 2;
+                const leftBound = offsetX;
+                const rightBound = canvas.width - offsetX;
+
+                if (this.x - BUBBLE_RADIUS < leftBound || this.x + BUBBLE_RADIUS > rightBound) {
+                    this.dx *= -1;
+                    this.x = Math.max(leftBound + BUBBLE_RADIUS, Math.min(rightBound - BUBBLE_RADIUS, this.x));
+                }
+            }
+             draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, BUBBLE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.stroke();
+                ctx.closePath();
+            }
+        }
+
+        // --- Game Logic Functions ---
+
+        /** Initializes the bubble grid based on STARTING_ROWS. */
+        function initGrid() {
+            grid = [];
+            for (let r = 0; r < STARTING_ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    if (c < COLS - (r % 2)) {
+                         grid[r][c] = new Bubble(r, c, getRandomColor());
+                    } else {
+                         grid[r][c] = null;
+                    }
+                }
+            }
+            // Fill potential rows up to MAX_GRID_ROWS with nulls
+            for (let r = STARTING_ROWS; r < MAX_GRID_ROWS; r++) {
+                // Ensure row array exists before filling
+                if (!grid[r]) grid[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    // Only set to null if not already defined (unlikely here, but safe)
+                    if (grid[r][c] === undefined) {
+                         grid[r][c] = null;
+                    }
+                }
+            }
+        }
+
+        /** Creates the next bubble for the shooter, using active colors. */
+        function createShooterBubble() {
+            let availableColorsInGrid = new Set();
+            // Iterate only through relevant part of grid for performance
+            const maxCheckRow = Math.min(grid.length, ROWS_VISIBLE + 5); // Check visible rows + buffer
+            for(let r=0; r < maxCheckRow; ++r) {
+                if (!grid[r]) continue;
+                for(let c=0; c < COLS; ++c) {
+                    if(grid[r][c] && activeColors.includes(grid[r][c].color)) {
+                        availableColorsInGrid.add(grid[r][c].color);
+                    }
+                }
+            }
+
+            let nextColor;
+            if (availableColorsInGrid.size > 0) {
+                const colorArray = Array.from(availableColorsInGrid);
+                nextColor = colorArray[Math.floor(Math.random() * colorArray.length)];
+            } else {
+                // Fallback if grid is effectively empty or has no active colors
+                nextColor = getRandomColor();
+            }
+            shooterBubble = new Bubble(-1, -1, nextColor); // Temp row/col
+            shooterBubble.x = canvas.width / 2; // Center shooter
+            shooterBubble.y = SHOOTER_Y;
+        }
+
+        /** Draws the shooter mechanism and aiming line. */
+        function drawShooter() {
+            const shooterX = canvas.width / 2; // Center shooter base
+            ctx.beginPath();
+            ctx.fillStyle = '#666';
+            ctx.fillRect(shooterX - 20, SHOOTER_Y - 5, 40, 10);
+            ctx.closePath();
+
+            // Draw aiming line
+            const lineEndX = shooterX + Math.cos(aimAngle) * 60;
+            const lineEndY = SHOOTER_Y + Math.sin(aimAngle) * 60;
+            ctx.beginPath();
+            ctx.moveTo(shooterX, SHOOTER_Y);
+            ctx.lineTo(lineEndX, lineEndY);
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+            ctx.lineWidth = 1; // Reset
+
+            // Draw bubble in shooter
+            if (shooterBubble) {
+                shooterBubble.x = shooterX; // Keep shooter bubble centered
+                shooterBubble.draw();
+            }
+        }
+
+        /** Draws all bubbles currently in the grid. */
+        function drawGrid() {
+            // Iterate only up to where bubbles might reasonably be
+            const maxDrawRow = Math.min(grid.length, ROWS_VISIBLE + 10);
+            for (let r = 0; r < maxDrawRow; r++) {
+                 if (!grid[r]) continue; // Skip if row doesn't exist
+                 for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c]) { // Check if bubble exists at [r][c]
+                        grid[r][c].updatePosition(); // Update needed for dynamic position
+                        grid[r][c].draw();
+                    }
+                }
+            }
+        }
+
+        /** Finds neighbors of a bubble in the grid. */
+        function getNeighbors(bubble) {
+            const neighbors = [];
+            const parity = bubble.row % 2;
+            const neighborCoords = [
+                { dr: 0, dc: -1 }, { dr: 0, dc: 1 }, // Left, Right
+                { dr: -1, dc: parity - 1 }, { dr: -1, dc: parity }, // Top-Left, Top-Right
+                { dr: 1, dc: parity - 1 }, { dr: 1, dc: parity }  // Bottom-Left, Bottom-Right
+            ];
+            for (const delta of neighborCoords) {
+                const nr = bubble.row + delta.dr;
+                const nc = bubble.col + delta.dc;
+                // Check bounds and ensure grid[nr] exists before accessing grid[nr][nc]
+                if (nr >= 0 && nr < grid.length && nc >= 0 && nc < COLS && grid[nr]?.[nc]) {
+                    neighbors.push(grid[nr][nc]);
+                }
+            }
+            return neighbors;
+        }
+
+        /** Finds cluster of same-colored bubbles using BFS. */
+        function findCluster(startBubble, targetColor) {
+            if (!startBubble) return []; // Safety check
+            const cluster = [];
+            const q = [startBubble];
+            const visited = new Set([`${startBubble.row},${startBubble.col}`]);
+            let head = 0;
+            while(head < q.length){
+                const current = q[head++];
+                // Check color match again (important if BFS explores non-matching neighbors)
+                // Although current implementation only queues matching neighbors
+                if (current.color === targetColor) {
+                    cluster.push(current);
+                    const neighbors = getNeighbors(current);
+                    for (const neighbor of neighbors) {
+                        const key = `${neighbor.row},${neighbor.col}`;
+                        // Add to queue only if not visited and color matches
+                        if (!visited.has(key) && neighbor.color === targetColor) {
+                            visited.add(key);
+                            q.push(neighbor);
+                        }
+                    }
+                }
+            }
+            return cluster;
+        }
+
+        /** Finds bubbles connected to the ceiling using BFS. */
+        function findCeilingConnected() {
+            const connected = new Set();
+            const q = [];
+            // Start BFS from all bubbles in the top row (row 0)
+            if (grid[0]) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[0][c]) {
+                        const key = `0,${c}`;
+                        if (!connected.has(key)) {
+                            q.push(grid[0][c]);
+                            connected.add(key);
+                        }
+                    }
+                }
+            }
+            // Perform BFS
+            let head = 0;
+            while(head < q.length){
+                const current = q[head++]; // Process queue
+                if (!current) continue; // Safety check for null entries if they somehow get in
+                const neighbors = getNeighbors(current);
+                for (const neighbor of neighbors) {
+                    const key = `${neighbor.row},${neighbor.col}`;
+                    if (!connected.has(key)) {
+                        connected.add(key);
+                        q.push(neighbor);
+                    }
+                }
+            }
+            return connected;
+        }
+
+        /** Removes floating bubbles (those not connected to the ceiling). */
+        function removeFloatingBubbles() {
+            const connectedSet = findCeilingConnected();
+            let removedCount = 0;
+            // Iterate only through relevant rows
+            const maxCheckRow = Math.min(grid.length, ROWS_VISIBLE + 10);
+            for (let r = 0; r < maxCheckRow; r++) {
+                 if (!grid[r]) continue;
+                 for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c]) { // Check if bubble exists
+                        const key = `${r},${c}`;
+                        if (!connectedSet.has(key)) {
+                            grid[r][c] = null; // Remove the bubble
+                            removedCount++;
+                        }
+                    }
+                }
+            }
+             if (removedCount > 0) {
+                 score += removedCount * 15; // More points for floaters
+                 updateScoreDisplay();
+             }
+        }
+
+        /** Handles collision detection for the shot bubble. */
+        function handleCollision() {
+            if (!shotBubble) return;
+
+            // 1. Ceiling collision (Top boundary)
+            if (shotBubble.y - BUBBLE_RADIUS <= 0) {
+                console.log("Collision: Ceiling");
+                snapBubble(shotBubble.x, BUBBLE_RADIUS); // Snap near top edge
+                return;
+            }
+
+            // 2. Bubble collision
+            // Iterate only relevant rows for collision check
+             const maxCheckRow = Math.min(grid.length, ROWS_VISIBLE + 10);
+             for (let r = 0; r < maxCheckRow; r++) {
+                 if (!grid[r]) continue;
+                 for (let c = 0; c < COLS; c++) {
+                    const bubble = grid[r][c];
+                    if (bubble) {
+                        // No need to update position here, it's done in drawGrid
+                        // const bubblePos = gridToPixel(bubble.row, bubble.col); // Use calculated position
+                        const dist = distance(shotBubble.x, shotBubble.y, bubble.x, bubble.y); // Use bubble's stored x,y
+                        // Collision threshold slightly less than diameter for better feel
+                        if (dist < BUBBLE_DIAMETER - 2) {
+                            console.log(`Collision: Bubble at ${r},${c}`);
+                            snapBubble(shotBubble.x, shotBubble.y);
+                            return; // Exit after first collision
+                        }
+                    }
+                }
+            }
+        }
+
+        /** Snaps the shot bubble to the best available grid cell. */
+        function snapBubble(pixelX, pixelY) {
+             if (!shotBubble) return; // Ensure shotBubble exists
+             const { row: targetRow, col: targetCol } = pixelToGrid(pixelX, pixelY);
+
+             let bestR = -1, bestC = -1, minDist = Infinity;
+
+             // Check the target cell and its direct neighbors for the closest valid *empty* slot
+             for (let rOffset = -1; rOffset <= 1; rOffset++) {
+                 for (let cOffset = -1; cOffset <= 1; cOffset++) {
+                     // Limit check range if needed, but +/- 1 is usually sufficient
+                     const checkRow = targetRow + rOffset;
+                     const checkCol = targetCol + cOffset;
+
+                     // Check bounds and if the cell is actually empty
+                     if (checkRow >= 0 && checkRow < grid.length && checkCol >= 0 && checkCol < COLS && !grid[checkRow]?.[checkCol]) {
+                         const pos = gridToPixel(checkRow, checkCol);
+                         const dist = distance(pixelX, pixelY, pos.x, pos.y);
+
+                         // Simple distance check - closest empty cell wins
+                         if (dist < minDist) {
+                             minDist = dist;
+                             bestR = checkRow;
+                             bestC = checkCol;
+                         }
+                     }
+                 }
+             }
+
+             // Snap to the best found empty cell
+             if (bestR !== -1) {
+                 console.log(`Snapping to best empty cell: ${bestR},${bestC}`);
+                 snapToGridCell(bestR, bestC);
+             } else {
+                 // Fallback: No empty neighbor found (e.g., hitting a dense wall)
+                 // Snap to the originally calculated grid position if it's valid, even if occupied (will overwrite)
+                 // This prevents bubbles getting "stuck" between occupied cells.
+                 if (targetRow >= 0 && targetRow < grid.length && targetCol >= 0 && targetCol < COLS) {
+                     console.warn(`No empty cell found, snapping to calculated ${targetRow},${targetCol} (may overwrite)`);
+                     snapToGridCell(targetRow, targetCol);
+                 } else {
+                     console.error("Could not find any valid snap position (target out of bounds). Bubble lost.");
+                     shotBubble = null; // Lose the bubble
+                     if (!gameOver) createShooterBubble(); // Prepare next shot
+                 }
+             }
+        }
+
+        /** Snaps bubble to a specific cell, handles matches, triggers descent. */
+        function snapToGridCell(r, c) {
+             // Ensure shotBubble exists before proceeding
+             if (!shotBubble) {
+                 console.error("snapToGridCell called without a shotBubble!");
+                 return;
+             }
+
+             // Ensure row exists, extend grid if necessary and within limits
+             while (r >= grid.length && grid.length < MAX_GRID_ROWS) {
+                 grid.push(new Array(COLS).fill(null));
+             }
+             // Final check if row is out of bounds
+             if (r >= grid.length || r < 0) {
+                 console.error(`Target row ${r} is out of bounds [0, ${grid.length-1}]. Game Over likely.`);
+                 gameOver = true; // Force game over if bubble tries to snap way out
+                 shotBubble = null;
+                 return;
+             }
+
+             // Ensure column is valid
+             c = Math.max(0, Math.min(COLS - 1, c));
+
+             // Check for overwrite
+             if (grid[r]?.[c]) {
+                 console.warn(`Overwriting bubble at occupied cell: ${r}, ${c}`);
+             }
+
+             // Create and place the new bubble
+             const newBubble = new Bubble(r, c, shotBubble.color);
+             grid[r][c] = newBubble;
+             const landedBubble = newBubble; // Reference for cluster check
+             const shotColor = shotBubble.color; // Store color before nulling shotBubble
+             shotBubble = null; // Mark shot as complete
+
+             // --- Post-Snap Logic ---
+             // Check for matches immediately
+             const cluster = findCluster(landedBubble, shotColor);
+             if (cluster.length >= 3) {
+                 console.log(`Match found: ${cluster.length} bubbles`);
+                 cluster.forEach(bubble => {
+                     // Check again if bubble exists before nulling (might be removed by cascade)
+                     if (grid[bubble.row]?.[bubble.col]) {
+                         grid[bubble.row][bubble.col] = null;
+                     }
+                 });
+                 score += cluster.length * 5; // Base score for match
+                 updateScoreDisplay();
+                 removeFloatingBubbles(); // Check for floaters *after* removing matches
+             }
+
+             // --- Descent Trigger Logic ---
+             if (!gameOver) {
+                 shotsFiredSinceDescend++;
+                 updateShotsCounterDisplay();
+                 if (shotsFiredSinceDescend >= SHOTS_PER_DESCEND) {
+                     descendGrid(); // This function now checks for game over internally
+                     shotsFiredSinceDescend = 0; // Reset counter
+                     updateShotsCounterDisplay(); // Update UI after reset
+                 }
+             }
+
+             // Check Game Over again *after* potential descent and float removal
+             if (!gameOver) checkGameOver();
+
+             // Prepare the next shot if the game is still running
+             if (!gameOver) {
+                 createShooterBubble();
+             }
+        }
+
+        /** Shifts the entire grid down by one row and adds a new top row. */
+        function descendGrid() {
+             // Prevent descent if game is already over
+             if (gameOver) return;
+             console.log("Descending grid...");
+
+             // 1. Shift all existing bubbles down by incrementing their row property
+             // Iterate backwards to avoid overwriting rows before they are processed
+             for (let r = grid.length - 1; r >= 0; r--) {
+                 if (!grid[r]) continue; // Skip non-existent rows
+                 for (let c = 0; c < COLS; c++) {
+                     if (grid[r][c]) {
+                         grid[r][c].row += 1; // Increment the row index
+                         // Check immediately if the bubble moved into the losing zone after shift
+                         // (Alternative to checking later in checkGameOver)
+                         // const loseLineY = SHOOTER_Y - BUBBLE_RADIUS;
+                         // const bubbleBottom = gridToPixel(grid[r][c].row, c).y + BUBBLE_RADIUS;
+                         // if (bubbleBottom >= loseLineY) gameOver = true;
+
+                         // Remove bubbles that go beyond the max grid row limit
+                         if (grid[r][c].row >= MAX_GRID_ROWS) {
+                             console.warn(`Bubble shifted out of max bounds (${MAX_GRID_ROWS}) during descent.`);
+                             grid[r][c] = null;
+                         }
+                     }
+                 }
+             }
+
+             // 2. Physically move bubbles in the array structure for consistency
+             // Shift rows down in the array structure
+             grid.pop(); // Remove the last row data (now empty or out of bounds)
+             grid.unshift(new Array(COLS).fill(null)); // Add a new empty row at the top (index 0)
+
+             // 3. Fill the new top row (row 0) with bubbles
+             for (let c = 0; c < COLS; c++) {
+                 // Ensure columns fit within the row structure (row 0 is even)
+                 if (c < COLS - (0 % 2)) {
+                      grid[0][c] = new Bubble(0, c, getRandomColor());
+                 }
+             }
+
+             // 4. Check for game over condition *after* the grid has fully shifted
+             checkGameOver();
+        }
+
+
+        /** Checks if any bubble's bottom edge has reached the losing line. */
+        function checkGameOver() {
+            // Don't run check if game is already marked as over
+            if (gameOver) return;
+
+            const loseLineY = SHOOTER_Y - BUBBLE_RADIUS; // Line Y-coordinate
+
+            // Check rows near the bottom first for efficiency
+            const startCheckRow = Math.max(0, ROWS_VISIBLE - 5); // Start check somewhat above visible bottom
+            for (let r = grid.length - 1; r >= startCheckRow ; r--) {
+                if (!grid[r]) continue; // Skip non-existent rows
+                for (let c = 0; c < COLS; c++) {
+                     const bubble = grid[r][c];
+                     if (bubble) {
+                         // Calculate bubble's current bottom position
+                         // No need to call updatePosition, use gridToPixel directly
+                         const bubbleBottom = gridToPixel(bubble.row, bubble.col).y + BUBBLE_RADIUS;
+
+                         if (bubbleBottom >= loseLineY) {
+                             console.log(`Game Over: Bubble at ${r},${c} bottom ${bubbleBottom.toFixed(1)} >= lose line ${loseLineY.toFixed(1)}`);
+                             gameOver = true;
+                             return; // Exit immediately once condition met
+                         }
+                     }
+                }
+             }
+        }
+
+
+        /** Updates score display. */
+        function updateScoreDisplay() { scoreDisplay.textContent = `Score: ${score}`; }
+        /** Updates shots counter display. */
+        function updateShotsCounterDisplay() { shotsCounterDisplay.textContent = `Shots: ${Math.max(0, SHOTS_PER_DESCEND - shotsFiredSinceDescend)}`; }
+        /** Updates difficulty display. */
+        function updateDifficultyDisplay() { difficultyDisplay.textContent = `Difficulty: ${difficultySettings[currentDifficulty].name}`; }
+
+        /** Main game update function (called every frame). */
+        function update() {
+            if (gameOver) return; // Don't update if game is over
+
+            // Update shot bubble position and check collision
+            if (shotBubble) {
+                shotBubble.update();
+                handleCollision(); // Checks ceiling and bubble collisions, calls snapBubble if needed
+
+                // Check if shot bubble went off top (missed everything)
+                if (shotBubble && shotBubble.y + BUBBLE_RADIUS < 0) {
+                    console.log("Shot bubble missed (off top).");
+                    shotBubble = null; // Bubble is lost
+
+                    // Count missed shot towards descent trigger
+                    shotsFiredSinceDescend++;
+                    updateShotsCounterDisplay();
+                    if (shotsFiredSinceDescend >= SHOTS_PER_DESCEND) {
+                        descendGrid(); // This checks for game over
+                        shotsFiredSinceDescend = 0;
+                        updateShotsCounterDisplay();
+                    }
+
+                    // Prepare next shot if game not over
+                    if (!gameOver) createShooterBubble();
+                    // Check game over again after potential descent
+                    if (!gameOver) checkGameOver();
+                }
+            }
+        }
+
+        /** Main game draw function (called every frame). */
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw elements
+            drawGrid(); // Draws bubbles based on their current row/col
+            drawShooter(); // Draws shooter base, aiming line, and loaded bubble
+            if (shotBubble) { shotBubble.draw(); } // Draws the flying bubble
+
+            // Draw losing line (for debugging)
+            /*
+            ctx.save(); // Save context state
+            ctx.beginPath();
+            ctx.moveTo(0, SHOOTER_Y - BUBBLE_RADIUS);
+            ctx.lineTo(canvas.width, SHOOTER_Y - BUBBLE_RADIUS);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Semi-transparent red
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]); // Dashed line
+            ctx.stroke();
+            ctx.restore(); // Restore context state (line dash, stroke style)
+            */
+        }
+
+        /** Displays the game over message box. */
+        function showGameOver() {
+            messageText.textContent = `Game Over! Score: ${score}`;
+            messageBox.style.display = 'block';
+            // Stop the game loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        /** Resets game state to start over with the *current* difficulty. */
+        function resetGame() {
+            console.log("Resetting game for difficulty:", currentDifficulty);
+            // Reset game state variables
+            grid = [];
+            shooterBubble = null;
+            shotBubble = null;
+            aimAngle = -Math.PI / 2;
+            score = 0;
+            gameOver = false;
+            shotsFiredSinceDescend = 0;
+            messageBox.style.display = 'none'; // Hide game over message
+
+            // Cancel any existing game loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            // Re-initialize all game elements (colors, dimensions, grid, UI)
+            initGameElements();
+
+            // Start the game loop ONLY if it's not already running (shouldn't be after cancel)
+             if (!animationFrameId) {
+                 gameLoop();
+             }
+        }
+
+        /** The main game loop, handles update, draw, and game over check. */
+        function gameLoop() {
+            // Check game over state at the beginning of the loop
+            if (gameOver) {
+                showGameOver(); // Display message and stop loop
+                return;
+            }
+
+            // Run update and draw logic
+            update();
+            draw();
+
+            // Request the next frame
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+         /** Initializes/re-initializes game elements based on current difficulty. */
+         function initGameElements() {
+             // 1. Set active colors
+             const numColors = difficultySettings[currentDifficulty].colors;
+             activeColors = ALL_COLORS.slice(0, numColors);
+             console.log(`Initializing with ${numColors} colors for ${currentDifficulty}:`, activeColors);
+
+             // 2. Set canvas dimensions
+             const gridWidth = COLS * BUBBLE_DIAMETER + BUBBLE_RADIUS;
+             // Canvas slightly wider than grid
+             canvas.width = gridWidth + BUBBLE_RADIUS * 4;
+             canvas.height = SHOOTER_Y + BUBBLE_RADIUS * 2; // Includes space for shooter
+
+             // 3. Update container size to match canvas
+             container.style.width = `${canvas.width}px`;
+             container.style.height = `${canvas.height}px`;
+
+             // 4. Reset mouse position for aiming relative to new canvas size
+             mouseX = canvas.width / 2;
+
+             // 5. Initialize grid, create first shooter bubble, reset UI displays
+             initGrid();
+             createShooterBubble();
+             updateScoreDisplay(); // Reset to 0
+             updateShotsCounterDisplay(); // Reset shots remaining
+             updateDifficultyDisplay(); // Show current difficulty name
+             gameOver = false; // Explicitly set game not over
+             messageBox.style.display = 'none'; // Ensure message box is hidden
+         }
+
+
+        // --- Event Listeners ---
+        // Mouse movement for aiming
+        canvas.addEventListener('mousemove', (e) => {
+            if (gameOver) return; // Disable aiming if game over
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const shooterX = canvas.width / 2; // Shooter is always centered
+
+            // Calculate angle relative to the centered shooter position
+            const dx = mouseX - shooterX;
+            const dy = mouseY - SHOOTER_Y;
+            aimAngle = Math.atan2(dy, dx);
+
+            // Clamp angle to avoid shooting down/too horizontally
+            const minAngle = -Math.PI * 0.95; // ~171 degrees
+            const maxAngle = -Math.PI * 0.05; // ~9 degrees
+            aimAngle = Math.max(minAngle, Math.min(maxAngle, aimAngle));
+        });
+
+        // Mouse click to shoot
+        canvas.addEventListener('click', () => {
+            // Can only shoot if a bubble is loaded, no bubble is currently flying, and game is not over
+            if (!shooterBubble || shotBubble || gameOver) return;
+
+            // Create the flying bubble
+            shotBubble = new ShotBubble(
+                canvas.width / 2, // Start shot from center
+                SHOOTER_Y,
+                aimAngle,
+                shooterBubble.color
+            );
+            // Remove the bubble from the shooter visually
+            shooterBubble = null;
+
+            // Note: Descent trigger logic is handled when the bubble *lands* in snapToGridCell
+        });
+
+        // Difficulty Selection Buttons
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                currentDifficulty = button.getAttribute('data-difficulty');
+                difficultySelectionDiv.style.display = 'none'; // Hide selection screen
+                container.style.display = 'block'; // Show game container
+                resetGame(); // Initialize and start game with selected difficulty
+            });
+        });
+
+        // Restart Button (in game over message)
+        restartButton.addEventListener('click', resetGame); // Re-initializes with current difficulty
+
+
+        // --- Initial Setup ---
+        // Game does not start automatically. Waits for difficulty selection.
+
+         // Optional: Handle window resize (basic centering example)
+         window.addEventListener('resize', () => {
+             // For a fixed canvas size, ensure the body continues to center it.
+             // More complex resizing would involve recalculating canvas size and element positions.
+         });
+
+    </script>
+</body>
+</html>

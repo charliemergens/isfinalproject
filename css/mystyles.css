@@ -1,0 +1,20 @@
+body{
+    font-family: 'poppins' sans-serif;
+    background-color: rgb(203, 225, 218);
+}
+h1, h2, h3, .subheading{
+    font-family: 'poppins' sans-serif !important;
+}
+a:hover{
+    color: rgb(241, 156, 156) !important;
+}
+.custom-img{
+    border: 5px solid black;
+    width: 200px;
+    height: auto;
+}
+.home-img{
+    border: 5px solid black;
+    width: 300px;
+    height: auto;
+}
